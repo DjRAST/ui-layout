@@ -78,9 +78,9 @@ angular.module('ui.layout', [])
 
             // Keep the bar from going past the next element min/max values
             if(afterContainer !== null &&
-               angular.isNumber(afterContainer.afterMinValue) &&
-               newPosition > (afterContainer.afterMinValue - dividerSize))
-                newPosition = afterContainer.afterMinValue - dividerSize;
+              angular.isNumber(afterContainer.afterMinValue) &&
+              newPosition > (afterContainer.afterMinValue - dividerSize))
+              newPosition = afterContainer.afterMinValue - dividerSize;
             if(afterContainer !== null && angular.isNumber(afterContainer.afterMaxValue) && newPosition < afterContainer.afterMaxValue) newPosition = afterContainer.afterMaxValue;
 
             // resize the before container
@@ -100,8 +100,8 @@ angular.module('ui.layout', [])
             // broadcast an event that resize happened (debounced to 50ms)
             if(debounceEvent) $timeout.cancel(debounceEvent);
             debounceEvent = $timeout(function() {
-                $scope.$broadcast('ui.layout.resize', beforeContainer, afterContainer);
-                debounceEvent = null;
+              $scope.$broadcast('ui.layout.resize', beforeContainer, afterContainer);
+              debounceEvent = null;
             }, 50);
           }
         }
@@ -148,7 +148,7 @@ angular.module('ui.layout', [])
     ctrl.mouseMoveHandler = function(mouseEvent) {
       var mousePos = mouseEvent[ctrl.sizeProperties.mouseProperty] ||
         (mouseEvent.originalEvent && mouseEvent.originalEvent[ctrl.sizeProperties.mouseProperty]) ||
-        // jQuery does touches weird, see #82
+          // jQuery does touches weird, see #82
         ($window.jQuery ?
           (mouseEvent.originalEvent ? mouseEvent.originalEvent.targetTouches[0][ctrl.sizeProperties.mouseProperty] : 0) :
           (mouseEvent.targetTouches ? mouseEvent.targetTouches[0][ctrl.sizeProperties.mouseProperty] : 0));
@@ -581,7 +581,7 @@ angular.module('ui.layout', [])
     };
   }])
 
-  .directive('uiSplitbar', ['LayoutContainer', function(LayoutContainer) {
+  .directive('uiSplitbar', ['LayoutContainer', '$window', function(LayoutContainer, $window) {
     // Get all the page.
     var htmlElement = angular.element(document.body.parentElement);
 
@@ -617,7 +617,7 @@ angular.module('ui.layout', [])
         prevIcon.addClass(prevIconClass);
         afterIcon.addClass(afterIconClass);
 
-        prevButton.on('click', function() {
+        function toggleBefore() {
           var prevSplitbarBeforeButton, prevSplitbarAfterButton;
           var result = ctrl.toggleBefore(scope.splitbar);
           var previousSplitbar = ctrl.getPreviousSplitbarContainer(scope.splitbar);
@@ -672,9 +672,18 @@ angular.module('ui.layout', [])
               }
             }
           }
-        });
+        }
 
-        afterButton.on('click', function() {
+        // Quick-Fix: Toggle before-container if collapsed before resize
+        angular.element($window).bind('resize', function() {
+          var containerIndex = ctrl.containers.indexOf(scope.splitbar) - 1;
+          if (ctrl.containers[containerIndex].collapsed === true) {
+            toggleBefore();
+          }
+        });
+        prevButton.on('click', toggleBefore);
+
+        function toggleAfter() {
           var nextSplitbarBeforeButton, nextSplitbarAfterButton;
           var result = ctrl.toggleAfter(scope.splitbar);
           var nextSplitbar = ctrl.getNextSplitbarContainer(scope.splitbar);
@@ -729,7 +738,16 @@ angular.module('ui.layout', [])
               }
             }
           }
+        }
+
+        // Quick-Fix: Toggle after-container if collapsed before resize
+        angular.element($window).bind('resize', function() {
+          var containerIndex = ctrl.containers.indexOf(scope.splitbar) + 1;
+          if (ctrl.containers[containerIndex].collapsed === true) {
+            toggleAfter();
+          }
         });
+        afterButton.on('click', toggleAfter);
 
         element.on('mousedown touchstart', function(e) {
           ctrl.movingSplitbar = scope.splitbar;
